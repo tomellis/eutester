@@ -461,11 +461,13 @@ if __name__ == "__main__":
                                                   test instance functionality and features \
                                                   on a Eucalyptus Cloud.  For more information, \
                                                   please refer to https://github.com/hspencer77/eutester/wiki/instancetest.",
-                                     usage="%(prog)s --credpath=<path to creds> [--xml] [--emi=emi-id] [--tests=test1,..testN]")
+                                     usage="%(prog)s --credpath=<path to creds> [--xml|nagios] [--emi=emi-id] [--tests=test1,..testN]")
     parser.add_argument('--credpath',
                         help="path to user credentials", default=".eucarc")
     parser.add_argument('--xml', 
                         help="to provide JUnit style XML output", action="store_true", default=False)
+    parser.add_argument('--nagios',
+                        help="to provide Nagios parsable output", action="store_true", default=False)
     parser.add_argument('--emi',
                         help="specific emi to run", default=False)
     parser.add_argument('--tests', nargs='+', 
@@ -483,9 +485,22 @@ if __name__ == "__main__":
             file = open("results/test-" + test + "result.xml", "w")
             result = xmlrunner.XMLTestRunner(file).run(InstanceBasics(test))
             file.close()
+        elif args.nagios:
+            try:
+                os.mkdir("/tmp/results")
+            except OSError:
+                pass   
+            file = open("/tmp/results/test-" + test + "-result.txt", "w")
+            result = unittest.TextTestRunner(verbosity=2).run(InstanceBasics(test))
         else:
             result = unittest.TextTestRunner(verbosity=2).run(InstanceBasics(test))
         if result.wasSuccessful():
+            if args.nagios:
+                file.write("PASS\n")
+                file.close()
             pass
         else:
+            if args.nagios:
+                file.write("FAIL\n")
+                file.close()
             exit(1)
